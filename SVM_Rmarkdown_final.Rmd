@@ -1,0 +1,70 @@
+---
+title: "SVM"
+output:
+  word_document: default
+  html_document: default
+---
+
+# SVM
+
+# 1. Package Load
+```{r}
+library(caret)
+library(kernlab)
+library(e1071)
+```
+
+# 2. Data Load
+```{r}
+scaled.train.df <- read.csv("scaled.train.df.csv")
+scaled.test.df <- read.csv("scaled.test.df.csv")
+```
+
+#3. e1071 패키지 사용 
+```{r}
+svm1 <- svm(Y ~ ., data = scaled.train.df)
+scaled.svm.pred <- predict(svm1, scaled.test.df)
+a <- confusionMatrix(factor(ifelse(scaled.svm.pred > 0.5, 1, 0)), factor(scaled.test.df$Y), positive="1")
+a
+```
+
+#4. kernlab 패키지 사용
+```{r}
+svm2 <- ksvm(Y ~., data=scaled.train.df, kernel="rbfdot", kpar="automatic", prob.model=TRUE)
+
+scaled.svm2.pred <- predict(svm2, scaled.test.df)
+a <- confusionMatrix(factor(ifelse(scaled.svm2.pred > 0.5, 1, 0)), factor(scaled.test.df$Y), positive="1")
+a
+```
+
+#5. 10-fold cross validation
+```{r}
+tuned_cv <- tune.svm(Y~., data = scaled.train.df, tunecontrol = tune.control(cross=10))
+
+summary(tuned_cv)
+attributes(tuned_cv)
+tuned_cv$performances
+tuned_cv$best.model
+
+cv_svm = svm(Y ~., data=scaled.train.df, gamma = 0.04166667, cost = 1, kernal = "radial", epsilon = 0.1)
+cv_svm
+cv_svm.pred <- predict(cv_svm, scaled.test.df)
+
+ab <- confusionMatrix(factor(ifelse(cv_svm.pred > 0.5, 1, 0)), factor(scaled.test.df$Y), positive="1")
+ab
+```
+
+#6. 10-fold cross validation with 5 repeats 
+```{r}
+trainControl <- trainControl(method="repeatedcv", number=10, repeats=5)
+
+set.seed(7)
+
+svm4 <- train(Y ~., data=scaled.train.df, method="svmRadial", trControl=trainControl)
+
+scaled.svm4.pred <- predict(svm4, scaled.test.df)
+a <- confusionMatrix(factor(ifelse(scaled.svm4.pred > 0.5, 1, 0)),factor(scaled.test.df$Y), positive="1")
+a
+```
+
+
